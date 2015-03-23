@@ -1,0 +1,134 @@
+#!/usr/bin/python
+# Author: Zhang Zhaoheng, Jerry
+# Email:  zzh699@gmail.com
+# Date:   24/Oct/2014
+
+import os, subprocess
+import re
+import getopt
+import sys
+
+class RpmTree():
+    # Get the current working directory, in which should normally contain the rpm packages
+    BASEDIR=os.getcwd()
+    ls=os.listdir(BASEDIR)
+
+    # Specify the architecture to be x86_64, which can be changed if needed.
+
+    rpmFiles=[]
+    rpmDict={}
+
+    def __init__(self):
+        arch='x86_64'
+        pattern=".*\.%s\.rpm$" % arch
+        patternObj=re.compile(pattern)
+
+        for content in self.ls:
+            if patternObj.match(content):
+                self.rpmFiles.append(content)
+
+        # Create a 
+	#	{
+	#	abbreviation:fullname
+	#	} 
+	#paired dictionary of rpm packages
+        #For example:
+        #       {
+        #       'apr-util':apr-util-1.3.9-3.el6_0.1.x86_64.rpm
+        #       'httpd'   :httpd-2.2.15-28.el6_4.x86_64.rpm
+        #       }
+        for rpmFullName in self.rpmFiles:
+            self.rpmDict[re.search(r'[a-zA-Z]+(-[a-zA-Z]+)*',rpmFullName).group(0)]=rpmFullName
+        
+    def listChosenRpm(self):
+        print "-"*40
+        for rpmfile in self.rpmFiles:
+            print rpmfile
+        print "-"*40
+
+    # Use shell command 'rpm -i --test <package>' to test whether there are 
+    # failed dependencies when installing the <package>. If there are,
+    # test all of them recursively.
+    def listTree(self,package,indent=0):
+        spaceNum=lambda x:' '*x*4 
+        print "%s|" % spaceNum(indent) # e.g. print spaceNum(2) will generate 8 whitespace character
+        print "%s|-%s" % (spaceNum(indent),package) 
+        # execute command and get the error message to be parsed
+        command="rpm -i %s --test" % package
+        command=command.split()
+        process=subprocess.Popen(command,shell=False,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        printedMsg=process.communicate()
+        errMsg=printedMsg[1] # equals to get the second element of ('stdout Msg', 'stderr Msg')
+        if errMsg:   # parse standard error message
+            indent+=1
+            try:
+                # A normal error message will be like this:
+                # """
+                # warning: httpd-2.2.15-28.el6_4.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID fd431d51: NOKEY
+                # error: Failed dependencies:
+                #       apr-util-ldap is needed by httpd-2.2.15-28.el6_4.x86_64
+                #       httpd-tools = 2.2.15-28.el6_4 is needed by httpd-2.2.15-28.el6_4.x86_64
+                #       libapr-1.so.0()(64bit) is needed by httpd-2.2.15-28.el6_4.x86_64
+                #       libaprutil-1.so.0()(64bit) is needed by httpd-2.2.15-28.el6_4.x86_64
+                # """
+                # this command will parse the packages listed in the error message into a python list "dependencyList" 
+                dependencyList=re.split(r'\t',errMsg)[1:]
+            except IndexError:
+                indent-=1
+                return indent
+            for failedDependency in dependencyList:
+                try:
+                    # list the package name that is not in the local repository
+                    pack_missed = re.search(r'(.*)\s+is needed',failedDependency).group(1)
+                    # list the package name that is in the local repository
+                    pack_exist = re.search(r'\w+(-\w+)*',failedDependency).group(0)
+                except AttributeError:
+                    print failedDependency[:-1]
+                    break
+                if pack_exist in self.rpmDict.keys():
+                    # recursively print package name with indentation
+                    self.listTree(self.rpmDict[pack_exist],indent)
+                else:
+                    print "%s|" % spaceNum(indent)
+                    print "%s|-%s (is needed)" % (spaceNum(indent),pack_missed)
+
+
+
+    def main(self):
+        try:
+            opts,args=getopt.getopt(sys.argv[1:],"hl",["help","list"]) 
+
+        except GetoptError:
+            usage()
+            sys.exit(1)
+
+        for opt,arg in opts:
+            if opt in ('-h','--help'):
+                self.usage()
+
+            elif opt in ('-l','--list'):
+                self.listChosenRpm()
+
+        if len(args): 
+            for packages in args:
+                self.listTree(packages)
+                print '-'*40
+
+        print "Done"
+        
+    def usage(self):
+        print """
+    Usage: 
+        1. rpmdeptree package1 [package2 package3 ...]
+        2. rpmdeptree *
+
+
+    options:
+        -h, --help : print this help page
+        -l, --list : list the rpm files with chosen architectures(e.g. x86_64) (others not avaliable yet)
+            """
+
+if __name__=="__main__":
+    tree=RpmTree()
+    tree.main()
+    
