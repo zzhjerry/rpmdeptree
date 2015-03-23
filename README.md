@@ -1,5 +1,5 @@
 # rpmdeptree
-Show the missing dependencires for a specified pm package in a tree view
+Show the missing dependencires for a specified rpm package in a tree view
 
 #Introduction
 
