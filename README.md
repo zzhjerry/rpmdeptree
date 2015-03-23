@@ -65,7 +65,7 @@ You will know `perl-Git = 1.7.1-2.el6_0.1` is needed. So you need to download an
 #Install
 
 1. Download the `rpmdeptree` file to your local computer
-2. move the `rpmdeptree` file to under whatever dirctory that your `$PATH` variable shows, preferably in `/usr/local/bin`
+2. move the `rpmdeptree` file to whatever dirctory your `$PATH` variable shows, preferably in `/usr/local/bin`
 
 Then you could feel free to use it. 
 
