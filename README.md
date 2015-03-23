@@ -13,11 +13,11 @@ While `rpmdeptree` can give you a clear view of this "tree"
 
 #What is `rpmdeptree`?
 
-`rpmdeptree`, short for "rpm dependency tree",  is a command line tool that can give you a "tree" view of the required dependencies for a given rpm package whenever the dependency is missing or existing in the current directory. The "current directory" here means the directory where the rpm package you want to install locates.
+`rpmdeptree`, short for "rpm dependency tree",  is a command line tool that can give you a "tree" view of the required dependencies for a given rpm package
 
 #Usage
 
-1. `cd` to the directory where you packages locate
+1. `cd` to the directory where your packages locate
 2. use `rpmdeptree <package name>` to see the result
 
 You could also see the detailed usage info with `rpmdeptree -h`
